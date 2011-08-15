@@ -1,0 +1,75 @@
+ses.py
+===============================================
+A simple and Pythonic Amazon Simple Email Service API client. 
+
+
+Usage
+-----
+
+Initialization:
+
+    >>> from ses improt SES, SESMail
+    >>> ACCESS_KEY_ID = 'YOUR ACCESS KEY ID'
+    >>> SECRET_KEY = 'YOUR SECRET KEY'
+    >>> ses = SES(ACCESS_KEY_ID, SECRET_KEY)
+
+Get sending quota:
+
+    >>> ses.quota
+    {u'Max24HourSend': 1000.0, 
+     u'SentLast24Hours': 0.0, 
+     u'MaxSendRate': 1.0}
+
+
+Get sending statistics:
+
+    >>> ses.stats
+    [DataPoint(timestamp=1313203860, bounces=1, complaints=0, delivery_attempts=3, rejects=0),
+     DataPoint(timestamp=1313207460, bounces=0, complaints=0, delivery_attempts=1, rejects=0),
+     DataPoint(timestamp=1313208360, bounces=0, complaints=0, delivery_attempts=3, rejects=0),
+     DataPoint(timestamp=1313209260, bounces=0, complaints=0, delivery_attempts=2, rejects=0),
+     DataPoint(timestamp=1313212860, bounces=0, complaints=0, delivery_attempts=2, rejects=0),
+     DataPoint(timestamp=1313220960, bounces=0, complaints=0, delivery_attempts=1, rejects=0),
+     DataPoint(timestamp=1313223660, bounces=0, complaints=0, delivery_attempts=3, rejects=0),
+     DataPoint(timestamp=1313225460, bounces=0, complaints=0, delivery_attempts=1, rejects=0),
+     DataPoint(timestamp=1313226360, bounces=0, complaints=0, delivery_attempts=1, rejects=0),
+     DataPoint(timestamp=1313287560, bounces=0, complaints=0, delivery_attempts=2, rejects=0),
+     DataPoint(timestamp=1313288460, bounces=0, complaints=0, delivery_attempts=4, rejects=0),
+     DataPoint(timestamp=1313289360, bounces=0, complaints=0, delivery_attempts=7, rejects=0),
+     DataPoint(timestamp=1313292960, bounces=0, complaints=0, delivery_attempts=1, rejects=0)]
+
+
+`timestamp` is seconds since UNIX epoch in GMT/UTC. 
+
+
+Get verified email addresses:
+
+    >>> ses.verified_addr
+    [u'aws-ses@riobard.com', u'noreply@botime.com']
+
+
+Verify an email address:
+
+    >>> ses.verify_addr('test@riobard.com')
+    {u'RequestId': u'0f7297f3-c764-11e0-b6d0-273d09173b49'}
+
+Delete a verified email address:
+
+    >>> ses.del_verified_addr('test@riobard.com')
+    {u'RequestId': u'36b0fb55-c764-11e0-ac10-2114a1a1f8e9'}
+
+
+Send an email:
+
+    >>> mail = SESMail(source    = 'me@riobard.com',
+    ...                to        = ['john@riobard.com', 'kate@riobard.com'],
+    ...                subject   = 'This is a test message',
+    ...                text_body = 'Message body in plain text',
+    ...                html_body = 'Message body in HTML')
+    >>> ses.send(mail)
+    {u'MessageId': u'00000131ce811456-6d32754c-8e68-4efc-9026-8c00518d901e-000000',
+     u'RequestId': u'a5aa67d0-c764-11e0-9f8f-3da8fc215a7e'}
+
+
+Sending raw emails is not implemented yet. All actions listed above will block
+while waiting for response from Amazon SES. 

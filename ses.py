@@ -124,6 +124,7 @@ class SES(object):
             raise SESError(e)
 
 
+    @property
     def verified_addr(self):
         xml = self.api({'Action': 'ListVerifiedEmailAddresses'})
         dom = minidom.parseString(xml)
@@ -145,6 +146,7 @@ class SES(object):
         return extract_xml(xml, ['RequestId'])
 
 
+    @property
     def quota(self):
         xml = self.api({'Action': 'GetSendQuota'})
         result = extract_xml(xml, [
@@ -159,6 +161,7 @@ class SES(object):
         return result
 
 
+    @property
     def stats(self):
         xml = self.api({'Action': 'GetSendStatistics'})
         dom = minidom.parseString(xml)
@@ -214,6 +217,7 @@ class SES(object):
         raise NotImplementedError()
 
         body = {'Action': 'SendRawEmail'}
-        return self.api(body)
+        xml  = self.api(body)
+        return extract_xml(xml, ['RequstId', 'MessageId'])
 
 
