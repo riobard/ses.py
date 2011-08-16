@@ -1,39 +1,11 @@
-import hashlib
 import hmac
-import datetime
-import base64
+from hashlib import sha256
+from base64 import b64encode
 import urllib
 import urllib2
-import time, calendar
+import time
+import calendar
 from xml.dom import minidom
-
-def extract_xml(xml, keys, multiple=False):
-    ''' Extract key-value dict from xml doc '''
-    dom = minidom.parseString(xml)
-    rs  = {}
-    for key in keys:
-        ls = dom.getElementsByTagName(key)
-        if multiple == False:
-            rs[key] = ls[0].childNodes[0].nodeValue
-        else:
-            rs[key] = [e.childNodes[0].nodeValue for e in ls]
-    return rs
-
-
-class SESMail(object):
-    def __init__(self, source, to, cc=[], bcc=[], reply_to = [],
-            subject=None, text_body=None, html_body=None, charset='UTF-8'):
-
-        self.source     = source
-        self.to         = to
-        self.cc         = cc
-        self.bcc        = bcc
-        self.reply_to   = reply_to
-        self.subject    = subject
-        self.html_body  = html_body
-        self.text_body  = text_body
-        self.charset    = charset
-
 
 class SESException(Exception):
     def __init__(self, Type='', Code='', Message='', RequestId=''):
@@ -51,6 +23,39 @@ class SESError(Exception):
     pass
 
 
+def extract_xml(xml, keys, multiple=False):
+    ''' Extract key-value dict from xml doc '''
+    dom = minidom.parseString(xml)
+    rs  = {}
+    try:
+        for key in keys:
+            ls = dom.getElementsByTagName(key)
+            if multiple:
+                rs[key] = [e.childNodes[0].nodeValue for e in ls]
+            else:
+                rs[key] = ls[0].childNodes[0].nodeValue
+
+        return rs
+    
+    except IndexError as e:
+        raise SESError('Failed to extract values from XML: {0}'.format(xml))
+
+
+class SESMail(object):
+    def __init__(self, source, to, cc=[], bcc=[], reply_to = [],
+            subject=None, text_body=None, html_body=None, charset='UTF-8'):
+
+        self.source     = source
+        self.to         = to
+        self.cc         = cc
+        self.bcc        = bcc
+        self.reply_to   = reply_to
+        self.subject    = subject
+        self.html_body  = html_body
+        self.text_body  = text_body
+        self.charset    = charset
+
+
 class SES(object):
 
     SES_URL = 'https://email.us-east-1.amazonaws.com/'
@@ -61,19 +66,14 @@ class SES(object):
         self.key    = key
 
 
-    def parse_error_response(self, xml):
-        keys = ['Type', 'Code', 'Message', 'RequestId']
-        return extract_xml(xml, keys)
-
-
     def api(self, body):
-        ''' Call AWS SES service '''
+        ''' Call AWS SES service API '''
 
         # RFC2822 date format
         date = time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.gmtime())
-        signature = base64.b64encode(hmac.new(self.key, date, hashlib.sha256).digest())
-        auth = 'AWS3-HTTPS AWSAccessKeyId={kid},Algorithm={algo},Signature={sig}'.format(
-                    kid=self.key_id, algo='HMACSHA256', sig=signature)
+        signature = b64encode(hmac.new(self.key, date, sha256).digest())
+        auth = 'AWS3-HTTPS AWSAccessKeyId={0},Algorithm={1},Signature={2}'.format(
+                    self.key_id, 'HMACSHA256', signature)
         post_data = urllib.urlencode(body)
         headers = {'Date': date,
                    'X-Amzn-Authorization': auth,
@@ -88,7 +88,7 @@ class SES(object):
         except urllib2.HTTPError as e:
             if 400 <= e.code < 500:
                 xml = ''.join(e.readlines())
-                error = self.parse_error_response(xml)
+                error = extract_xml(xml, ['Type', 'Code', 'Message', 'RequestId'])
                 raise SESException(**error)
 
         except urllib2.URLError as e:
@@ -96,26 +96,31 @@ class SES(object):
 
 
     @property
-    def verified_addr(self):
+    def verified(self):
+        ''' List verified email addresses '''
         xml = self.api({'Action': 'ListVerifiedEmailAddresses'})
-        rs = extract_xml(xml, ['member'], True)['member']
-        return rs
+        return extract_xml(xml, ['member'], True)['member']
 
 
-    def verify_addr(self, addr):
-        xml = self.api({'Action'       : 'VerifyEmailAddress',
-                        'EmailAddress' : addr})
+    def verify(self, addr):
+        ''' Verify an email address
+        
+        SES will send a verification email to the address. The address will be verified
+        after clicking a link in the verification email. 
+        '''
+        xml = self.api({'Action': 'VerifyEmailAddress', 'EmailAddress': addr})
         return extract_xml(xml, ['RequestId'])
 
 
-    def del_verified_addr(self, addr):
-        xml = self.api({'Action'       : 'DeleteVerifiedEmailAddress',
-                        'EmailAddress' : addr})
+    def delete(self, addr):
+        ''' Delete a verified email address '''
+        xml = self.api({'Action': 'DeleteVerifiedEmailAddress', 'EmailAddress': addr})
         return extract_xml(xml, ['RequestId'])
 
 
     @property
     def quota(self):
+        ''' Get sending quota '''
         xml = self.api({'Action': 'GetSendQuota'})
         result = extract_xml(xml, [
             'Max24HourSend',    # max mails allowed to send in 24 hours
@@ -125,13 +130,14 @@ class SES(object):
 
         d = {}
         for each in result:
-            d[str(each)] = int(float(result[each]))
+            d[each] = int(float(result[each]))
 
         return d
 
 
     @property
     def stats(self):
+        ''' Get sending statistics '''
         xml = self.api({'Action': 'GetSendStatistics'})
         rs  = extract_xml(xml, ['Timestamp', 'Bounces', 'Complaints', 
             'DeliveryAttempts', 'Rejects'], True)
@@ -147,6 +153,7 @@ class SES(object):
 
 
     def send(self, mail):
+        ''' Send a structured email '''
         body = {'Action': 'SendEmail', 'Source': mail.source}
 
         if mail.subject is not None:
@@ -169,11 +176,12 @@ class SES(object):
             for (i, addr) in enumerate(addrs, 1):
                 body['{0}Addresses.member.{1}'.format(t, i)] = addr
 
-        return self.api(body)
+        xml = self.api(body)
+        return extract_xml(xml, ['RequestId'])
 
 
     def send_raw(self, raw_mail):
-        # DKIM replies on raw emails
+        ''' Send a raw email. DKIM relies on this. '''
         raise NotImplementedError()
 
         body = {'Action': 'SendRawEmail'}

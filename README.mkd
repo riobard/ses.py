@@ -1,6 +1,10 @@
-ses.py
-===============================================
-A simple and Pythonic Amazon Simple Email Service API client. 
+ses.py: Simple and Pythonic Amazon Simple Email Service API client
+==================================================================
+
+
+Author: Riobard Zhan
+Email: me@riobard.com
+SES API version: 2010-12-01
 
 
 Usage
@@ -38,24 +42,24 @@ Get sending statistics:
 
 
 
-`timestamp` is seconds since UNIX epoch in GMT/UTC. 
+`timestamp` is seconds since UNIX epoch in GMT/UTC. Every point represents the sending statistics during a 15-minute interval. 
 
 
 Get verified email addresses:
 
-    >>> ses.verified_addr
-    [u'aws-ses@riobard.com', u'noreply@botime.com']
+    >>> ses.verified
+    [u'aws-ses@riobard.com', u'noreply@riobard.com']
 
 
 Verify an email address:
 
-    >>> ses.verify_addr('test@riobard.com')
-    {u'RequestId': u'0f7297f3-c764-11e0-b6d0-273d09173b49'}
+    >>> ses.verify('test@riobard.com')
+    {'RequestId': u'0f7297f3-c764-11e0-b6d0-273d09173b49'}
 
 Delete a verified email address:
 
-    >>> ses.del_verified_addr('test@riobard.com')
-    {u'RequestId': u'36b0fb55-c764-11e0-ac10-2114a1a1f8e9'}
+    >>> ses.delete('test@riobard.com')
+    {'RequestId': u'36b0fb55-c764-11e0-ac10-2114a1a1f8e9'}
 
 
 Send an email:
@@ -66,9 +70,10 @@ Send an email:
     ...                text_body = 'Message body in plain text',
     ...                html_body = 'Message body in HTML')
     >>> ses.send(mail)
-    {u'MessageId': u'00000131ce811456-6d32754c-8e68-4efc-9026-8c00518d901e-000000',
-     u'RequestId': u'a5aa67d0-c764-11e0-9f8f-3da8fc215a7e'}
+    {'MessageId': u'00000131ce811456-6d32754c-8e68-4efc-9026-8c00518d901e-000000',
+     'RequestId': u'a5aa67d0-c764-11e0-9f8f-3da8fc215a7e'}
 
 
-Sending raw emails is not implemented yet. All actions listed above will block
-while waiting for response from Amazon SES. 
+Sending raw emails is not implemented yet.
+
+All actions listed above will block while waiting for response from Amazon SES. 
