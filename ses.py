@@ -5,38 +5,16 @@ import base64
 import urllib
 import urllib2
 import time, calendar
-from xml.parsers.expat import ParserCreate
 from xml.dom import minidom
-
 
 def extract_xml(xml, keys):
     ''' Extract key-value dict from xml doc '''
-
-    print 'CALLING extract_xml'
-
-    state   = {'current_node': None}
-    result  = {}
-    
-    def start_element(name, attrs):
-        if name in set(keys):
-            state['current_node'] = name
-
-    def end_element(name):
-        if state['current_node'] == name:
-            state['current_node'] = None
-
-    def char_data(data):
-        if state['current_node'] in set(keys):
-            result[state['current_node']] = data
-
-    parser = ParserCreate()
-    parser.StartElementHandler  = start_element
-    parser.EndElementHandler    = end_element
-    parser.CharacterDataHandler = char_data
-    parser.Parse(xml)
-
-    return result
-
+    dom = minidom.parseString(xml)
+    rs  = {}
+    for key in keys:
+        e = dom.getElementsByTagName(key)
+        rs[key] = e[0].childNodes[0].nodeValue
+    return rs
 
 class SESMail(object):
     def __init__(self, source, to, cc=[], bcc=[], reply_to = [],
