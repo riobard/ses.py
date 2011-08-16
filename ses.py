@@ -7,11 +7,7 @@ import urllib2
 import time, calendar
 from xml.parsers.expat import ParserCreate
 from xml.dom import minidom
-from collections import namedtuple
 
-
-SendDataPoint = namedtuple('DataPoint', 
-    'timestamp, bounces, complaints, delivery_attempts, rejects')
 
 def extract_xml(xml, keys):
     ''' Extract key-value dict from xml doc '''
@@ -76,8 +72,8 @@ class SES(object):
     SES_URL = 'https://email.us-east-1.amazonaws.com/'
     REQUEST_TIMEOUT = 30
 
-    def __init__(self, keyid, key):
-        self.keyid  = keyid
+    def __init__(self, key_id, key):
+        self.key_id = key_id
         self.key    = key
 
 
@@ -93,23 +89,15 @@ class SES(object):
         post_data = urllib.urlencode(body)
         # RFC2822 date format
         date = time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.gmtime())
-        signature   = base64.b64encode(hmac.new(self.key, date, 
-            hashlib.sha256).digest())
-
+        signature = base64.b64encode(hmac.new(self.key, date, hashlib.sha256).digest())
+        auth = 'AWS3-HTTPS AWSAccessKeyId={kid},Algorithm={algo},Signature={sig}'.format(
+                    kid=self.key_id, algo='HMACSHA256', sig=signature),
         headers = {'Date': date,
-                   'X-Amzn-Authorization': 'AWS3-HTTPS '
-                                           'AWSAccessKeyId={keyid},'
-                                           'Algorithm={algo},'
-                                           'Signature={sig}'.format(
-                                               keyid=self.keyid,
-                                               algo='HMACSHA256',
-                                               sig=signature),
+                   'X-Amzn-Authorization': auth,
                    'Content-Type': 'application/x-www-form-urlencoded',
                    'Content-Length': len(post_data)}
-
-        req = urllib2.Request(self.SES_URL, post_data, headers)
-
         try: 
+            req = urllib2.Request(self.SES_URL, post_data, headers)
             rsp = urllib2.urlopen(req, timeout=self.REQUEST_TIMEOUT)
             if 100 <= rsp.code < 300:   # success
                 return ''.join(rsp.readlines())
@@ -155,16 +143,21 @@ class SES(object):
             'SentLast24Hours'   # mails sent during the previous 24 hours
         ])
 
+        d = {}
         for each in result:
-            result[each] = float(result[each])
+            d[str(each)] = int(float(result[each]))
 
-        return result
+        return d
 
 
     @property
     def stats(self):
         xml = self.api({'Action': 'GetSendStatistics'})
         dom = minidom.parseString(xml)
+
+        timestamps = [calendar.timegm(time.strptime(
+            e.childNodes[0].nodeValue, '%Y-%m-%dT%H:%M:%SZ')) for e in 
+            dom.getElementsByTagName('Timestamp')]
 
         bounces = [int(e.childNodes[0].nodeValue) for e in 
                 dom.getElementsByTagName('Bounces')]
@@ -178,12 +171,9 @@ class SES(object):
         rejects = [int(e.childNodes[0].nodeValue) for e in 
                 dom.getElementsByTagName('Rejects')]
 
-        timestamps = [calendar.timegm(time.strptime(
-            e.childNodes[0].nodeValue, '%Y-%m-%dT%H:%M:%SZ')) for e in 
-            dom.getElementsByTagName('Timestamp')]
-
-        return [SendDataPoint(*each) for each in sorted(zip(
-            timestamps, bounces, complaints, delivery_attempts, rejects))]
+        rs = sorted(zip(timestamps, bounces, complaints, delivery_attempts, rejects))
+        return [{'Timestamp': t, 'Bounces': b, 'Complaints': c, 'DeliveryAttempts': d,
+                 'Rejects': r} for (t, b, c, d, r) in rs]
 
 
     def send(self, mail):

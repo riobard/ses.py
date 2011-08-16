@@ -9,34 +9,33 @@ Usage
 Initialization:
 
     >>> from ses improt SES, SESMail
-    >>> ACCESS_KEY_ID = 'YOUR ACCESS KEY ID'
-    >>> SECRET_KEY = 'YOUR SECRET KEY'
-    >>> ses = SES(ACCESS_KEY_ID, SECRET_KEY)
+    >>> ses = SES(key_id='YOUR ACCESS KEY ID', key='YOUR SECRET KEY')
+
 
 Get sending quota:
 
     >>> ses.quota
-    {u'Max24HourSend': 1000.0, 
-     u'SentLast24Hours': 0.0, 
-     u'MaxSendRate': 1.0}
+    {'Max24HourSend': 1000, 'SentLast24Hours': 0, 'MaxSendRate': 1}
 
 
 Get sending statistics:
 
     >>> ses.stats
-    [DataPoint(timestamp=1313203860, bounces=1, complaints=0, delivery_attempts=3, rejects=0),
-     DataPoint(timestamp=1313207460, bounces=0, complaints=0, delivery_attempts=1, rejects=0),
-     DataPoint(timestamp=1313208360, bounces=0, complaints=0, delivery_attempts=3, rejects=0),
-     DataPoint(timestamp=1313209260, bounces=0, complaints=0, delivery_attempts=2, rejects=0),
-     DataPoint(timestamp=1313212860, bounces=0, complaints=0, delivery_attempts=2, rejects=0),
-     DataPoint(timestamp=1313220960, bounces=0, complaints=0, delivery_attempts=1, rejects=0),
-     DataPoint(timestamp=1313223660, bounces=0, complaints=0, delivery_attempts=3, rejects=0),
-     DataPoint(timestamp=1313225460, bounces=0, complaints=0, delivery_attempts=1, rejects=0),
-     DataPoint(timestamp=1313226360, bounces=0, complaints=0, delivery_attempts=1, rejects=0),
-     DataPoint(timestamp=1313287560, bounces=0, complaints=0, delivery_attempts=2, rejects=0),
-     DataPoint(timestamp=1313288460, bounces=0, complaints=0, delivery_attempts=4, rejects=0),
-     DataPoint(timestamp=1313289360, bounces=0, complaints=0, delivery_attempts=7, rejects=0),
-     DataPoint(timestamp=1313292960, bounces=0, complaints=0, delivery_attempts=1, rejects=0)]
+    [{'Complaints': 0, 'Timestamp': 1313203500, 'DeliveryAttempts': 3, 'Bounces': 1, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': 1313207100, 'DeliveryAttempts': 9, 'Bounces': 0, 'Rejects': 0}, 
+     {'Complaints': 0, 'Timestamp': 1313208000, 'DeliveryAttempts': 6, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': 1313209800, 'DeliveryAttempts': 2, 'Bounces': 0, 'Rejects': 0}, 
+     {'Complaints': 0, 'Timestamp': 1313213400, 'DeliveryAttempts': 2, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': 1313221500, 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': 1313224200, 'DeliveryAttempts': 3, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': 1313225100, 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': 1313226000, 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': 1313288100, 'DeliveryAttempts': 6, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': 1313289000, 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': 1313289900, 'DeliveryAttempts': 6, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': 1313292600, 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': 1313429400, 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0}]
+
 
 
 `timestamp` is seconds since UNIX epoch in GMT/UTC. 
