@@ -3,8 +3,7 @@ from hashlib import sha256
 from base64 import b64encode
 import urllib
 import urllib2
-import time
-import calendar
+from datetime import datetime
 from xml.dom import minidom
 
 class SESException(Exception):
@@ -70,7 +69,7 @@ class SES(object):
         ''' Call AWS SES service API '''
 
         # RFC2822 date format
-        date = time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.gmtime())
+        date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S +0000')
         signature = b64encode(hmac.new(self.key, date, sha256).digest())
         auth = 'AWS3-HTTPS AWSAccessKeyId={0},Algorithm={1},Signature={2}'.format(
                     self.key_id, 'HMACSHA256', signature)
@@ -141,13 +140,13 @@ class SES(object):
         xml = self.api({'Action': 'GetSendStatistics'})
         rs  = extract_xml(xml, ['Timestamp', 'Bounces', 'Complaints', 
             'DeliveryAttempts', 'Rejects'], True)
-        timestamps  = [calendar.timegm(time.strptime(e, '%Y-%m-%dT%H:%M:%SZ')) 
-                for e in rs['Timestamp']]
+        timestamps  = [datetime.strptime(e, '%Y-%m-%dT%H:%M:%SZ') 
+                        for e in rs['Timestamp']]
         bounces     = [int(e) for e in rs['Bounces']]
         complaints  = [int(e) for e in rs['Complaints']]
-        delivery_attempts =  [int(e) for e in rs['DeliveryAttempts']]
+        attempts    = [int(e) for e in rs['DeliveryAttempts']]
         rejects     = [int(e) for e in rs['Rejects']]
-        ls = sorted(zip(timestamps, bounces, complaints, delivery_attempts, rejects))
+        ls = sorted(zip(timestamps, bounces, complaints, attempts, rejects))
         return [{'Timestamp': t, 'Bounces': b, 'Complaints': c, 'DeliveryAttempts': d,
                  'Rejects': r} for (t, b, c, d, r) in ls]
 

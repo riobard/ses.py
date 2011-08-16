@@ -25,20 +25,23 @@ Get sending quota:
 Get sending statistics:
 
     >>> ses.stats
-    [{'Complaints': 0, 'Timestamp': 1313203500, 'DeliveryAttempts': 3, 'Bounces': 1, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': 1313207100, 'DeliveryAttempts': 9, 'Bounces': 0, 'Rejects': 0}, 
-     {'Complaints': 0, 'Timestamp': 1313208000, 'DeliveryAttempts': 6, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': 1313209800, 'DeliveryAttempts': 2, 'Bounces': 0, 'Rejects': 0}, 
-     {'Complaints': 0, 'Timestamp': 1313213400, 'DeliveryAttempts': 2, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': 1313221500, 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': 1313224200, 'DeliveryAttempts': 3, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': 1313225100, 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': 1313226000, 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': 1313288100, 'DeliveryAttempts': 6, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': 1313289000, 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': 1313289900, 'DeliveryAttempts': 6, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': 1313292600, 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': 1313429400, 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0}]
+    [{'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 13, 2, 43), 'DeliveryAttempts': 2, 'Bounces': 1, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 13, 2, 58), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 13, 3, 43), 'DeliveryAttempts': 9, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 13, 3, 58), 'DeliveryAttempts': 6, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 13, 4, 28), 'DeliveryAttempts': 2, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 13, 5, 28), 'DeliveryAttempts': 2, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 13, 7, 43), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 13, 8, 28), 'DeliveryAttempts': 3, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 13, 8, 58), 'DeliveryAttempts': 2, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 14, 2, 13), 'DeliveryAttempts': 6, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 14, 2, 28), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 14, 2, 43), 'DeliveryAttempts': 6, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 14, 3, 28), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 15, 17, 28), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 16, 15, 13), 'DeliveryAttempts': 3, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 16, 15, 58), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 16, 16, 58), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0}]
 
 
 
