@@ -7,14 +7,18 @@ import urllib2
 import time, calendar
 from xml.dom import minidom
 
-def extract_xml(xml, keys):
+def extract_xml(xml, keys, multiple=False):
     ''' Extract key-value dict from xml doc '''
     dom = minidom.parseString(xml)
     rs  = {}
     for key in keys:
-        e = dom.getElementsByTagName(key)
-        rs[key] = e[0].childNodes[0].nodeValue
+        ls = dom.getElementsByTagName(key)
+        if multiple == False:
+            rs[key] = ls[0].childNodes[0].nodeValue
+        else:
+            rs[key] = [e.childNodes[0].nodeValue for e in ls]
     return rs
+
 
 class SESMail(object):
     def __init__(self, source, to, cc=[], bcc=[], reply_to = [],
@@ -57,7 +61,6 @@ class SES(object):
         self.key    = key
 
 
-
     def parse_error_response(self, xml):
         keys = ['Type', 'Code', 'Message', 'RequestId']
         return extract_xml(xml, keys)
@@ -95,10 +98,7 @@ class SES(object):
     @property
     def verified_addr(self):
         xml = self.api({'Action': 'ListVerifiedEmailAddresses'})
-        dom = minidom.parseString(xml)
-        members = dom.getElementsByTagName('member')
-        rs  = [e.childNodes[0].nodeValue for e in members]
-        rs.sort()
+        rs = extract_xml(xml, ['member'], True)['member']
         return rs
 
 
@@ -133,27 +133,17 @@ class SES(object):
     @property
     def stats(self):
         xml = self.api({'Action': 'GetSendStatistics'})
-        dom = minidom.parseString(xml)
-
-        timestamps = [calendar.timegm(time.strptime(
-            e.childNodes[0].nodeValue, '%Y-%m-%dT%H:%M:%SZ')) for e in 
-            dom.getElementsByTagName('Timestamp')]
-
-        bounces = [int(e.childNodes[0].nodeValue) for e in 
-                dom.getElementsByTagName('Bounces')]
-
-        complaints = [int(e.childNodes[0].nodeValue) for e in 
-                dom.getElementsByTagName('Complaints')]
-
-        delivery_attempts =  [int(e.childNodes[0].nodeValue) for e in 
-                dom.getElementsByTagName('DeliveryAttempts')]
-
-        rejects = [int(e.childNodes[0].nodeValue) for e in 
-                dom.getElementsByTagName('Rejects')]
-
-        rs = sorted(zip(timestamps, bounces, complaints, delivery_attempts, rejects))
+        rs  = extract_xml(xml, ['Timestamp', 'Bounces', 'Complaints', 
+            'DeliveryAttempts', 'Rejects'], True)
+        timestamps  = [calendar.timegm(time.strptime(e, '%Y-%m-%dT%H:%M:%SZ')) 
+                for e in rs['Timestamp']]
+        bounces     = [int(e) for e in rs['Bounces']]
+        complaints  = [int(e) for e in rs['Complaints']]
+        delivery_attempts =  [int(e) for e in rs['DeliveryAttempts']]
+        rejects     = [int(e) for e in rs['Rejects']]
+        ls = sorted(zip(timestamps, bounces, complaints, delivery_attempts, rejects))
         return [{'Timestamp': t, 'Bounces': b, 'Complaints': c, 'DeliveryAttempts': d,
-                 'Rejects': r} for (t, b, c, d, r) in rs]
+                 'Rejects': r} for (t, b, c, d, r) in ls]
 
 
     def send(self, mail):
