@@ -12,6 +12,8 @@ from xml.dom import minidom
 def extract_xml(xml, keys):
     ''' Extract key-value dict from xml doc '''
 
+    print 'CALLING extract_xml'
+
     state   = {'current_node': None}
     result  = {}
     
@@ -86,12 +88,12 @@ class SES(object):
     def api(self, body):
         ''' Call AWS SES service '''
 
-        post_data = urllib.urlencode(body)
         # RFC2822 date format
         date = time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.gmtime())
         signature = base64.b64encode(hmac.new(self.key, date, hashlib.sha256).digest())
         auth = 'AWS3-HTTPS AWSAccessKeyId={kid},Algorithm={algo},Signature={sig}'.format(
-                    kid=self.key_id, algo='HMACSHA256', sig=signature),
+                    kid=self.key_id, algo='HMACSHA256', sig=signature)
+        post_data = urllib.urlencode(body)
         headers = {'Date': date,
                    'X-Amzn-Authorization': auth,
                    'Content-Type': 'application/x-www-form-urlencoded',
