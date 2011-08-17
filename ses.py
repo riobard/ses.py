@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import hmac
 from hashlib import sha256
 from base64 import b64encode
@@ -5,6 +6,8 @@ import urllib
 import urllib2
 from datetime import datetime
 from xml.dom import minidom
+
+
 
 
 class SESError(Exception):
@@ -55,8 +58,9 @@ class SESMail(object):
 
 class SES(object):
 
-    SES_URL = 'https://email.us-east-1.amazonaws.com/'
-    REQUEST_TIMEOUT = 30
+    API_VERSION = '2010-12-01'
+    API_URL = 'https://email.us-east-1.amazonaws.com/'
+    API_REQUEST_TIMEOUT = 30    # seconds
 
     def __init__(self, key_id, key):
         self.key_id = key_id
@@ -76,8 +80,8 @@ class SES(object):
                    'Content-Type': 'application/x-www-form-urlencoded',
                    'Content-Length': len(post_data)}
         try: 
-            req = urllib2.Request(self.SES_URL, post_data, headers)
-            rsp = urllib2.urlopen(req, timeout=self.REQUEST_TIMEOUT)
+            req = urllib2.Request(self.API_URL, post_data, headers)
+            rsp = urllib2.urlopen(req, timeout=self.API_REQUEST_TIMEOUT)
             if 100 <= rsp.code < 300:   # success
                 return ''.join(rsp.readlines())
 
@@ -95,7 +99,9 @@ class SES(object):
     def verified(self):
         ''' List verified email addresses '''
         xml = self.api({'Action': 'ListVerifiedEmailAddresses'})
-        return extract_xml(xml, ['member'], True)['member']
+        rs = extract_xml(xml, ['member'], True)['member']
+        rs.sort()
+        return rs
 
 
     def verify(self, addr):
@@ -185,3 +191,102 @@ class SES(object):
         return extract_xml(xml, ['RequstId', 'MessageId'])
 
 
+
+
+
+if __name__ == '__main__':
+    import sys
+    from getopt import gnu_getopt as getopt, GetoptError
+
+
+    USAGE = ''' Help information '''
+
+    def parse_credentials(filename):
+        for line in open(filename).readlines():
+            line = line.strip()
+            if line.startswith('AWSAccessKeyId'):
+                k, v    = line.split('=', 1)
+                key_id  = v.strip()
+            elif line.startswith('AWSSecretKey'):
+                k, v    = line.split('=', 1)
+                key     = v.strip()
+
+        return key_id, key
+
+    try:
+        opts, args = getopt(sys.argv[1:], 'k:a:hs:f:t:c:b:', ['help'])
+        opts = dict(opts)
+    except GetoptError as e:
+        sys.exit(e)
+
+    if '-h' in opts or '--help' in opts:
+        print USAGE
+        sys.exit()
+
+    if '-k' in opts:
+        key_id, key = parse_credentials(opts['-k'])
+        ses = SES(key_id, key)
+    else:
+        sys.exit('Credentials file "-k" required')
+
+    if len(args) > 0:
+        action = args[0].lower()
+    else:
+        sys.exit('Action required. ')
+
+
+    try:
+        if action == 'quota':
+            for (k, v) in ses.quota.items():
+                print '{0}: {1}'.format(k, v)
+
+        elif action == 'stats':
+            for d in ses.stats:
+                print ' '.join(['{t}',
+                                'Bounces={b}',
+                                'Complaints={c}', 
+                                'DeliveryAttempts={d}',
+                                'Rejects={r}']).format(
+                                    t=d['Timestamp'],
+                                    b=d['Bounces'],
+                                    c=d['Complaints'],
+                                    d=d['DeliveryAttempts'],
+                                    r=d['Rejects'])
+
+        elif action == 'verified':
+            for each in ses.verified:
+                print each
+
+        elif action == 'verify':
+            for each in args[1:]:
+                ses.verify(each)
+                print 'Verification email sent to {0}'.format(each)
+
+        elif action == 'delete':
+            for each in args[1:]:
+                ses.delete(each)
+                print 'Deleted verified email address {0}'.format(each)
+
+        elif action == 'send':
+            if '-f' in opts:
+                source  = opts.get('-f')
+            else:
+                sys.exit('Mail source "-f" required')
+
+            subject = opts.get('-s', None)
+            to      = [e for e in opts.get('-t', '').split(',') if e != '']
+            bcc     = [e for e in opts.get('-b', '').split(',') if e != '']
+            cc      = [e for e in opts.get('-c', '').split(',') if e != '']
+            body    = sys.stdin.read()
+
+            mail = SESMail(source       = source, 
+                        subject      = subject,
+                        to           = to,
+                        cc           = cc,
+                        bcc          = bcc,
+                        text_body    = body)
+
+            ses.send(mail)
+
+    except SESError as e:
+        sys.exit(e)
