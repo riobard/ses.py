@@ -1,9 +1,6 @@
 ses.py: Amazon Simple Email Service API client
 ==============================================
 
-
-Author: Riobard Zhan
-Email: me@riobard.com
 SES API version: 2010-12-01
 
 
