@@ -1,5 +1,5 @@
-ses.py: Simple and Pythonic Amazon Simple Email Service API client
-==================================================================
+ses.py: Amazon Simple Email Service API client
+==============================================
 
 
 Author: Riobard Zhan
@@ -7,8 +7,8 @@ Email: me@riobard.com
 SES API version: 2010-12-01
 
 
-Usage
------
+Python Usage
+------------
 
 Initialization:
 
@@ -41,30 +41,31 @@ Get sending statistics:
 
 
 
-`timestamp` is seconds since UNIX epoch in GMT/UTC. Every point represents the sending statistics during a 15-minute interval. 
+`timestamp` is seconds since UNIX epoch in GMT/UTC. Every point represents the 
+sending statistics during a 15-minute interval. 
 
 
 Get verified email addresses:
 
     >>> ses.verified
-    [u'aws-ses@riobard.com', u'noreply@riobard.com']
+    [u'steve@example.com', u'larry@example.com']
 
 
 Verify an email address:
 
-    >>> ses.verify('test@riobard.com')
+    >>> ses.verify('noreply@example.com')
     {'RequestId': u'0f7297f3-c764-11e0-b6d0-273d09173b49'}
 
 Delete a verified email address:
 
-    >>> ses.delete('test@riobard.com')
+    >>> ses.delete('noreply@example.com')
     {'RequestId': u'36b0fb55-c764-11e0-ac10-2114a1a1f8e9'}
 
 
 Send an email:
 
-    >>> mail = SESMail(source    = 'me@riobard.com',
-    ...                to        = ['john@riobard.com', 'kate@riobard.com'],
+    >>> mail = SESMail(source    = 'norely@example.com',
+    ...                to        = ['john@example.com', 'kate@example.com'],
     ...                subject   = 'This is a test message',
     ...                text_body = 'Message body in plain text',
     ...                html_body = 'Message body in HTML')
@@ -77,3 +78,52 @@ Sending raw emails is not implemented yet.
 
 All actions listed above will block while waiting for response from Amazon SES.
 All actions will raise `SESError` in case of error. 
+
+
+
+
+Command Line Usage
+------------------
+
+`ses.py` also provides command line interface, here is its help message:
+
+
+    ses.py [action] -k [credentials file] [args]
+
+    Example
+    -------
+    1. Sending email:
+
+        echo "email text body" | ses.py send -k [credentials file] -f from_addr -t [to_addr1,to_addr2,...] -c [cc_addr1,cc_addr2,...] -b [bcc_addr1,bcc_addr2,...] -s "email subject" 
+
+
+    2. Get send quota:
+
+        ses.py quota -k [credentials file]
+
+
+    3. Get send statistics:
+
+        ses.py stats -k [credentials file]
+
+
+    4. Get verified email addresses:
+
+        ses.py verified -k [credentials file]
+
+
+    5. Verify email addreses:
+
+        ses.py verify -k [credentials file] [addr1,addr2,...]
+
+
+    6. Delete verified email addresses:
+
+        ses.py delete -k [credentials file] [addr1,addr2,...]
+
+
+    Credentials file example
+    ------------------------
+
+        AWSAccessKeyId=XXXXXXXXXXXXXXXXXXXX
+        AWSSecretKey=YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY

@@ -8,8 +8,6 @@ from datetime import datetime
 from xml.dom import minidom
 
 
-
-
 class SESError(Exception):
     def __init__(self, msg=None, **kargs):
         self.msg    = msg
@@ -198,8 +196,46 @@ if __name__ == '__main__':
     import sys
     from getopt import gnu_getopt as getopt, GetoptError
 
+    USAGE = '''ses.py [action] -k [credentials file] [args]
 
-    USAGE = ''' Help information '''
+Example
+-------
+1. Sending email:
+
+    echo "email text body" | ses.py send -k [credentials file] -f from_addr -t [to_addr1,to_addr2,...] -c [cc_addr1,cc_addr2,...] -b [bcc_addr1,bcc_addr2,...] -s "email subject" 
+
+
+2. Get send quota:
+
+    ses.py quota -k [credentials file]
+
+
+3. Get send statistics:
+
+    ses.py stats -k [credentials file]
+
+
+4. Get verified email addresses:
+
+    ses.py verified -k [credentials file]
+
+
+5. Verify email addreses:
+
+    ses.py verify -k [credentials file] [addr1,addr2,...]
+
+
+6. Delete verified email addresses:
+
+    ses.py delete -k [credentials file] [addr1,addr2,...]
+
+
+Credentials file example
+------------------------
+
+    AWSAccessKeyId=XXXXXXXXXXXXXXXXXXXX
+    AWSSecretKey=YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
+'''
 
     def parse_credentials(filename):
         for line in open(filename).readlines():
@@ -210,83 +246,103 @@ if __name__ == '__main__':
             elif line.startswith('AWSSecretKey'):
                 k, v    = line.split('=', 1)
                 key     = v.strip()
-
         return key_id, key
 
-    try:
-        opts, args = getopt(sys.argv[1:], 'k:a:hs:f:t:c:b:', ['help'])
-        opts = dict(opts)
-    except GetoptError as e:
-        sys.exit(e)
 
-    if '-h' in opts or '--help' in opts:
-        print USAGE
-        sys.exit()
-
-    if '-k' in opts:
-        key_id, key = parse_credentials(opts['-k'])
-        ses = SES(key_id, key)
-    else:
-        sys.exit('Credentials file "-k" required')
-
-    if len(args) > 0:
-        action = args[0].lower()
-    else:
-        sys.exit('Action required. ')
+    def parse_opts(cmd_opts):
+        try:
+            opts, args = getopt(cmd_opts, 'k:a:hs:f:t:c:b:', ['help'])
+            return dict(opts), args
+        except GetoptError as e:
+            sys.exit(e)
 
 
-    try:
-        if action == 'quota':
-            for (k, v) in ses.quota.items():
-                print '{0}: {1}'.format(k, v)
+    def get_action(args):
+        if len(args) > 0:
+            return args[0].lower()
+        else:
+            sys.exit('Action required')
 
-        elif action == 'stats':
-            for d in ses.stats:
-                print ' '.join(['{t}',
-                                'Bounces={b}',
-                                'Complaints={c}', 
-                                'DeliveryAttempts={d}',
-                                'Rejects={r}']).format(
-                                    t=d['Timestamp'],
-                                    b=d['Bounces'],
-                                    c=d['Complaints'],
-                                    d=d['DeliveryAttempts'],
-                                    r=d['Rejects'])
+    def get_credentials(opts):
+        if '-k' in opts:
+            key_id, key = parse_credentials(opts['-k'])
+            return key_id, key
+        else:
+            sys.exit('Credentials file "-k" required')
 
-        elif action == 'verified':
-            for each in ses.verified:
-                print each
 
-        elif action == 'verify':
-            for each in args[1:]:
-                ses.verify(each)
-                print 'Verification email sent to {0}'.format(each)
+    def action_quota(ses, opts, args):
+        for (k, v) in ses.quota.items():
+            print '{0:20}{1}'.format(k, v)
 
-        elif action == 'delete':
-            for each in args[1:]:
-                ses.delete(each)
-                print 'Deleted verified email address {0}'.format(each)
 
-        elif action == 'send':
-            if '-f' in opts:
-                source  = opts.get('-f')
-            else:
-                sys.exit('Mail source "-f" required')
+    def action_stats(ses, opts, args):
+        for d in ses.stats:
+            print ' '.join(['{t}',
+                            'Bounces={b}',
+                            'Complaints={c}', 
+                            'DeliveryAttempts={d}',
+                            'Rejects={r}']).format(
+                                t=d['Timestamp'],
+                                b=d['Bounces'],
+                                c=d['Complaints'],
+                                d=d['DeliveryAttempts'],
+                                r=d['Rejects'])
 
-            subject = opts.get('-s', None)
-            to      = [e for e in opts.get('-t', '').split(',') if e != '']
-            bcc     = [e for e in opts.get('-b', '').split(',') if e != '']
-            cc      = [e for e in opts.get('-c', '').split(',') if e != '']
-            body    = sys.stdin.read()
 
-            mail = SESMail(source       = source, 
-                        subject      = subject,
-                        to           = to,
-                        cc           = cc,
-                        bcc          = bcc,
-                        text_body    = body)
+    def action_verified(ses, opts, args):
+        for each in ses.verified:
+            print each
 
-            ses.send(mail)
 
-    except SESError as e:
-        sys.exit(e)
+    def action_verify(ses, opts, args):
+        addrs = [e for e in args[1].split(',') if e!= '']
+        for each in addrs:
+            ses.verify(each)
+            print 'Verification email sent to {0}'.format(each)
+
+
+    def action_delete(ses, opts, args):
+        addrs = [e for e in args[1].split(',') if e!= '']
+        for each in addrs:
+            ses.delete(each)
+            print 'Deleted verified email address {0}'.format(each)
+
+
+    def action_send(ses, opts, args):
+        if '-f' in opts:
+            source  = opts.get('-f')
+        else:
+            sys.exit('Mail source "-f" required')
+
+        subject = opts.get('-s', None)
+        to      = [e for e in opts.get('-t', '').split(',') if e != '']
+        bcc     = [e for e in opts.get('-b', '').split(',') if e != '']
+        cc      = [e for e in opts.get('-c', '').split(',') if e != '']
+        body    = sys.stdin.read()
+        mail = SESMail(source=source, subject=subject, to=to, cc=cc, bcc=bcc, 
+                       text_body=body)
+        ses.send(mail)
+
+    mapping = {'quota'     : action_quota,
+               'stats'     : action_stats,
+               'verified'  : action_verified,
+               'verify'    : action_verify,
+               'send'      : action_send,
+               'delete'    : action_delete}
+
+    def main():
+        opts, args = parse_opts(sys.argv[1:])
+        if '-h' in opts or '--help' in opts:
+            print USAGE
+            sys.exit()
+
+        action = get_action(args)
+        if action in mapping:
+            key_id, key = get_credentials(opts)
+            ses         = SES(key_id, key)
+            mapping[action](ses, opts, args)
+        else:
+            sys.exit('Unknown action "{0}"'.format(action))
+    
+    main()
