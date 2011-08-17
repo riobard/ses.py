@@ -6,20 +6,18 @@ import urllib2
 from datetime import datetime
 from xml.dom import minidom
 
-class SESException(Exception):
-    def __init__(self, Type='', Code='', Message='', RequestId=''):
-        self.type = Type
-        self.code = Code
-        self.msg  = Message
-        self.reqid= RequestId
-
-    def __str__(self):
-        return ('[ErrorResponse] {msg}|{type}|{code}|{reqid}').format(
-                type=self.type, code=self.code, msg=self.msg, reqid=self.reqid)
-
 
 class SESError(Exception):
-    pass
+    def __init__(self, msg=None, **kargs):
+        self.msg    = msg
+        self.kargs  = kargs
+
+    def __str__(self):
+        s = [] if self.msg is None else [self.msg]
+        for (k, v) in self.kargs.items():
+            s.append('{0}={1}'.format(k, v))
+        rs = '|'.join(s)
+        return rs
 
 
 def extract_xml(xml, keys, multiple=False):
@@ -67,7 +65,6 @@ class SES(object):
 
     def api(self, body):
         ''' Call AWS SES service API '''
-
         # RFC2822 date format
         date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S +0000')
         signature = b64encode(hmac.new(self.key, date, sha256).digest())
@@ -88,7 +85,7 @@ class SES(object):
             if 400 <= e.code < 500:
                 xml = ''.join(e.readlines())
                 error = extract_xml(xml, ['Type', 'Code', 'Message', 'RequestId'])
-                raise SESException(**error)
+                raise SESError(**error)
 
         except urllib2.URLError as e:
             raise SESError(e)

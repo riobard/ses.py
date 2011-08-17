@@ -12,7 +12,7 @@ Usage
 
 Initialization:
 
-    >>> from ses improt SES, SESMail
+    >>> from ses improt SES, SESMail, SESError
     >>> ses = SES(key_id='YOUR ACCESS KEY ID', key='YOUR SECRET KEY')
 
 
@@ -37,11 +37,7 @@ Get sending statistics:
      {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 14, 2, 13), 'DeliveryAttempts': 6, 'Bounces': 0, 'Rejects': 0},
      {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 14, 2, 28), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
      {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 14, 2, 43), 'DeliveryAttempts': 6, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 14, 3, 28), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 15, 17, 28), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 16, 15, 13), 'DeliveryAttempts': 3, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 16, 15, 58), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0},
-     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 16, 16, 58), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0}]
+     {'Complaints': 0, 'Timestamp': datetime.datetime(2011, 8, 14, 3, 28), 'DeliveryAttempts': 1, 'Bounces': 0, 'Rejects': 0}]
 
 
 
@@ -79,4 +75,5 @@ Send an email:
 
 Sending raw emails is not implemented yet.
 
-All actions listed above will block while waiting for response from Amazon SES. 
+All actions listed above will block while waiting for response from Amazon SES.
+All actions will raise `SESError` in case of error. 
