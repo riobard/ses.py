@@ -279,10 +279,10 @@ Credentials file example
     def action_stats(ses, opts, args):
         for d in ses.stats:
             print ' '.join(['{t}',
-                            'Bounces={b}',
-                            'Complaints={c}', 
-                            'DeliveryAttempts={d}',
-                            'Rejects={r}']).format(
+                            '{b} Bounces',
+                            '{c} Complaints', 
+                            '{d} DeliveryAttempts',
+                            '{r} Rejects']).format(
                                 t=d['Timestamp'],
                                 b=d['Bounces'],
                                 c=d['Complaints'],
@@ -339,9 +339,12 @@ Credentials file example
 
         action = get_action(args)
         if action in mapping:
-            key_id, key = get_credentials(opts)
-            ses         = SES(key_id, key)
-            mapping[action](ses, opts, args)
+            try:
+                key_id, key = get_credentials(opts)
+                ses         = SES(key_id, key)
+                mapping[action](ses, opts, args)
+            except SESError as e:
+                sys.exit('Error: {0}'.format(e))
         else:
             sys.exit('Unknown action "{0}"'.format(action))
     
