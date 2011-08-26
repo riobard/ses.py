@@ -238,15 +238,21 @@ Credentials file example
 '''
 
     def parse_credentials(filename):
-        for line in open(filename).readlines():
-            line = line.strip()
-            if line.startswith('AWSAccessKeyId'):
-                k, v    = line.split('=', 1)
-                key_id  = v.strip()
-            elif line.startswith('AWSSecretKey'):
-                k, v    = line.split('=', 1)
-                key     = v.strip()
-        return key_id, key
+        try:
+            for line in open(filename).readlines():
+                line = line.strip()
+                if line.startswith('AWSAccessKeyId'):
+                    k, v    = line.split('=', 1)
+                    key_id  = v.strip()
+                elif line.startswith('AWSSecretKey'):
+                    k, v    = line.split('=', 1)
+                    key     = v.strip()
+            return key_id, key
+        except IOError as e:
+            if e.errno == 2:
+                sys.exit('Credential file "{0}" not found. '.format(filename))
+            else:
+                raise
 
 
     def parse_opts(cmd_opts):
@@ -261,91 +267,94 @@ Credentials file example
         if len(args) > 0:
             return args[0].lower()
         else:
-            sys.exit('Action required')
+            sys.exit('Action required. ')
 
     def get_credentials(opts):
         if '-k' in opts:
             key_id, key = parse_credentials(opts['-k'])
             return key_id, key
         else:
-            sys.exit('Credentials file "-k" required')
+            sys.exit('Credentials file "-k" required. ')
 
 
-    def action_quota(ses, opts, args):
-        for (k, v) in ses.quota.items():
-            print '{0:20}{1}'.format(k, v)
+    class Actions():
+        ' Action container ' 
+
+        @staticmethod
+        def quota(ses, opts, args):
+            for (k, v) in ses.quota.items():
+                print '{0:20}{1}'.format(k, v)
 
 
-    def action_stats(ses, opts, args):
-        for d in ses.stats:
-            print ' '.join(['{t}',
-                            '{b} Bounces',
-                            '{c} Complaints', 
-                            '{d} DeliveryAttempts',
-                            '{r} Rejects']).format(
-                                t=d['Timestamp'],
-                                b=d['Bounces'],
-                                c=d['Complaints'],
-                                d=d['DeliveryAttempts'],
-                                r=d['Rejects'])
+        @staticmethod
+        def stats(ses, opts, args):
+            for d in ses.stats:
+                print ' '.join(['{t}',
+                                '{b} Bounces',
+                                '{c} Complaints', 
+                                '{d} DeliveryAttempts',
+                                '{r} Rejects']).format(
+                                    t=d['Timestamp'],
+                                    b=d['Bounces'],
+                                    c=d['Complaints'],
+                                    d=d['DeliveryAttempts'],
+                                    r=d['Rejects'])
 
 
-    def action_verified(ses, opts, args):
-        for each in ses.verified:
-            print each
+        @staticmethod
+        def verified(ses, opts, args):
+            for each in ses.verified:
+                print each
 
 
-    def action_verify(ses, opts, args):
-        addrs = [e for e in args[1].split(',') if e!= '']
-        for each in addrs:
-            ses.verify(each)
-            print 'Verification email sent to {0}'.format(each)
+        @staticmethod
+        def verify(ses, opts, args):
+            addrs = [e for e in args[1].split(',') if e!= '']
+            for each in addrs:
+                ses.verify(each)
+                print 'Verification email sent to {0}'.format(each)
 
 
-    def action_delete(ses, opts, args):
-        addrs = [e for e in args[1].split(',') if e!= '']
-        for each in addrs:
-            ses.delete(each)
-            print 'Deleted verified email address {0}'.format(each)
+        @staticmethod
+        def delete(ses, opts, args):
+            addrs = [e for e in args[1].split(',') if e!= '']
+            for each in addrs:
+                ses.delete(each)
+                print 'Deleted verified email address {0}'.format(each)
 
 
-    def action_send(ses, opts, args):
-        if '-f' in opts:
-            source  = opts.get('-f')
-        else:
-            sys.exit('Mail source "-f" required')
+        @staticmethod
+        def send(ses, opts, args):
+            if '-f' in opts:
+                source  = opts.get('-f')
+            else:
+                sys.exit('Mail source "-f" required')
 
-        subject = opts.get('-s', None)
-        to      = [e for e in opts.get('-t', '').split(',') if e != '']
-        bcc     = [e for e in opts.get('-b', '').split(',') if e != '']
-        cc      = [e for e in opts.get('-c', '').split(',') if e != '']
-        body    = sys.stdin.read()
-        mail = SESMail(source=source, subject=subject, to=to, cc=cc, bcc=bcc, 
-                       text_body=body)
-        ses.send(mail)
+            subject = opts.get('-s', None)
+            to      = [e for e in opts.get('-t', '').split(',') if e != '']
+            bcc     = [e for e in opts.get('-b', '').split(',') if e != '']
+            cc      = [e for e in opts.get('-c', '').split(',') if e != '']
+            body    = sys.stdin.read()
+            mail = SESMail(source=source, subject=subject, to=to, cc=cc, bcc=bcc, 
+                        text_body=body)
+            ses.send(mail)
 
-    mapping = {'quota'     : action_quota,
-               'stats'     : action_stats,
-               'verified'  : action_verified,
-               'verify'    : action_verify,
-               'send'      : action_send,
-               'delete'    : action_delete}
+
 
     def main():
         opts, args = parse_opts(sys.argv[1:])
         if '-h' in opts or '--help' in opts:
-            print USAGE
-            sys.exit()
+            sys.exit(USAGE)
 
         action = get_action(args)
-        if action in mapping:
-            try:
-                key_id, key = get_credentials(opts)
-                ses         = SES(key_id, key)
-                mapping[action](ses, opts, args)
-            except SESError as e:
-                sys.exit('Error: {0}'.format(e))
-        else:
-            sys.exit('Unknown action "{0}"'.format(action))
+        if not hasattr(Actions, action):
+            sys.exit('Unknown action: {0}'.format(action))
+
+        try:
+            key_id, key = get_credentials(opts)
+            ses         = SES(key_id, key)
+            getattr(Actions, action)(ses, opts, args)
+        except SESError as e:
+            sys.exit('Error: {0}'.format(e))
     
     main()
