@@ -90,7 +90,7 @@ class SES(object):
                 raise SESError(**error)
 
         except urllib2.URLError as e:
-            raise SESError(e)
+            raise SESError(str(e))
 
 
     @property
