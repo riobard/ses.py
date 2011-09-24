@@ -86,6 +86,8 @@ class SES(object):
                     raise SESError('Error SES response: {0}'.format(str(rsp)))
                 else:
                     return res
+            else:
+                raise SESError('HTTP request error: {0}'.format(str(rsp)))
 
         except urllib2.HTTPError as e:
             if 400 <= e.code < 500:
