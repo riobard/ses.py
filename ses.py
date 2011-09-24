@@ -81,7 +81,11 @@ class SES(object):
             req = urllib2.Request(self.API_URL, post_data, headers)
             rsp = urllib2.urlopen(req, timeout=self.API_REQUEST_TIMEOUT)
             if 100 <= rsp.code < 300:   # success
-                return ''.join(rsp.readlines())
+                res = ''.join(rsp.readlines())
+                if res is None:
+                    raise SESError('Error SES response: {0}'.format(str(rsp)))
+                else:
+                    return res
 
         except urllib2.HTTPError as e:
             if 400 <= e.code < 500:
@@ -90,7 +94,7 @@ class SES(object):
                 raise SESError(**error)
 
         except urllib2.URLError as e:
-            raise SESError(e)
+            raise SESError(str(e))
 
 
     @property
