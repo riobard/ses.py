@@ -81,7 +81,13 @@ class SES(object):
             req = urllib2.Request(self.API_URL, post_data, headers)
             rsp = urllib2.urlopen(req, timeout=self.API_REQUEST_TIMEOUT)
             if 100 <= rsp.code < 300:   # success
-                return ''.join(rsp.readlines())
+                res = ''.join(rsp.readlines())
+                if res is None:
+                    raise SESError('Error SES response: {0}'.format(str(rsp)))
+                else:
+                    return res
+            else:
+                raise SESError('HTTP request error: {0}'.format(str(rsp)))
 
         except urllib2.HTTPError as e:
             if 400 <= e.code < 500:
@@ -192,6 +198,26 @@ class SES(object):
 
 
 
+def parse_credentials(filename):
+    try:
+        for line in open(filename).readlines():
+            line = line.strip()
+            if line.startswith('AWSAccessKeyId'):
+                k, v    = line.split('=', 1)
+                key_id  = v.strip()
+            elif line.startswith('AWSSecretKey'):
+                k, v    = line.split('=', 1)
+                key     = v.strip()
+        return key_id, key
+    except IOError as e:
+        if e.errno == 2:
+            sys.exit('Credential file "{0}" not found. '.format(filename))
+        else:
+            raise
+
+
+
+
 if __name__ == '__main__':
     import sys
     from getopt import gnu_getopt as getopt, GetoptError
@@ -236,23 +262,6 @@ Credentials file example
     AWSAccessKeyId=XXXXXXXXXXXXXXXXXXXX
     AWSSecretKey=YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
 '''
-
-    def parse_credentials(filename):
-        try:
-            for line in open(filename).readlines():
-                line = line.strip()
-                if line.startswith('AWSAccessKeyId'):
-                    k, v    = line.split('=', 1)
-                    key_id  = v.strip()
-                elif line.startswith('AWSSecretKey'):
-                    k, v    = line.split('=', 1)
-                    key     = v.strip()
-            return key_id, key
-        except IOError as e:
-            if e.errno == 2:
-                sys.exit('Credential file "{0}" not found. '.format(filename))
-            else:
-                raise
 
 
     def parse_opts(cmd_opts):
