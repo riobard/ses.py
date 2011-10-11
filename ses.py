@@ -1,11 +1,10 @@
 #!/usr/bin/python
-import hmac
+import hmac, urllib, httplib, sys
 from hashlib import sha256
 from base64 import b64encode
-import urllib
-import urllib2
 from datetime import datetime
 from xml.dom import minidom
+from getopt import gnu_getopt as getopt, GetoptError
 
 
 class SESError(Exception):
@@ -57,16 +56,23 @@ class SESMail(object):
 class SES(object):
 
     API_VERSION = '2010-12-01'
-    API_URL = 'https://email.us-east-1.amazonaws.com/'
+    API_ENDPOINT = 'email.us-east-1.amazonaws.com'  # just the host
     API_REQUEST_TIMEOUT = 30    # seconds
 
-    def __init__(self, key_id, key):
+    def __init__(self, key_id, key, api_endpoint = None):
         self.key_id = key_id
         self.key    = key
+        if api_endpoint is not None:
+            self.API_ENDPOINT = api_endpoint
+        self.conn = httplib.HTTPSConnection(host=self.API_ENDPOINT,
+                                             timeout=self.API_REQUEST_TIMEOUT)
 
 
     def api(self, body):
-        ''' Call AWS SES service API '''
+        ''' Call AWS SES service API 
+        
+        This is NOT THREAD-SAFE!
+        '''
         # RFC2822 date format
         date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S +0000')
         signature = b64encode(hmac.new(self.key, date, sha256).digest())
@@ -76,26 +82,25 @@ class SES(object):
         headers = {'Date': date,
                    'X-Amzn-Authorization': auth,
                    'Content-Type': 'application/x-www-form-urlencoded',
-                   'Content-Length': len(post_data)}
-        try: 
-            req = urllib2.Request(self.API_URL, post_data, headers)
-            rsp = urllib2.urlopen(req, timeout=self.API_REQUEST_TIMEOUT)
-            if 100 <= rsp.code < 300:   # success
-                res = ''.join(rsp.readlines())
-                if res is None:
-                    raise SESError('Error SES response: {0}'.format(str(rsp)))
-                else:
-                    return res
+                   'Content-Length': len(post_data),
+                   'Connection': 'keep-alive'}
+
+        try:
+            self.conn.request('POST', '/', headers=headers, body=post_data)
+            rsp = self.conn.getresponse()
+            if rsp.status == 200:
+                return rsp.read()
             else:
-                raise SESError('HTTP request error: {0}'.format(str(rsp)))
+                msg = 'HTTP request error: HTTP {version} {status} {reason}\n'\
+                      '{headers}\n\n{body}'.format(
+                              version=rsp.version, 
+                              status=rsp.status,
+                              reason=rsp.reason,
+                              headers=rsp.msg,
+                              body=rsp.read())
+                raise SESError(msg.format(str(rsp)))
 
-        except urllib2.HTTPError as e:
-            if 400 <= e.code < 500:
-                xml = ''.join(e.readlines())
-                error = extract_xml(xml, ['Type', 'Code', 'Message', 'RequestId'])
-                raise SESError(**error)
-
-        except urllib2.URLError as e:
+        except httplib.HTTPException as e:
             raise SESError(str(e))
 
 
@@ -219,8 +224,6 @@ def parse_credentials(filename):
 
 
 if __name__ == '__main__':
-    import sys
-    from getopt import gnu_getopt as getopt, GetoptError
 
     USAGE = '''ses.py [action] -k [credentials file] [args]
 
@@ -299,10 +302,10 @@ Credentials file example
         def stats(ses, opts, args):
             for d in ses.stats:
                 print ' '.join(['{t}',
-                                '{b} Bounces',
-                                '{c} Complaints', 
-                                '{d} DeliveryAttempts',
-                                '{r} Rejects']).format(
+                                'Bounces={b}',
+                                'Complaints={c}', 
+                                'DeliveryAttempts={d}',
+                                'Rejects={r} ']).format(
                                     t=d['Timestamp'],
                                     b=d['Bounces'],
                                     c=d['Complaints'],
