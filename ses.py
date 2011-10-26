@@ -38,20 +38,6 @@ def extract_xml(xml, keys, multiple=False):
         raise SESError('Failed to extract values from XML: {0}'.format(xml))
 
 
-class SESMail(object):
-    def __init__(self, source, to, cc=[], bcc=[], reply_to = [],
-            subject=None, text_body=None, html_body=None, charset='UTF-8'):
-
-        self.source     = source
-        self.to         = to
-        self.cc         = cc
-        self.bcc        = bcc
-        self.reply_to   = reply_to
-        self.subject    = subject
-        self.html_body  = html_body
-        self.text_body  = text_body
-        self.charset    = charset
-
 
 class SES(object):
 
@@ -101,6 +87,9 @@ class SES(object):
                 raise SESError(msg.format(str(rsp)))
 
         except httplib.HTTPException as e:
+            raise SESError(str(e))
+
+        except IOError as e:
             raise SESError(str(e))
 
 
@@ -163,27 +152,28 @@ class SES(object):
                  'Rejects': r} for (t, b, c, d, r) in ls]
 
 
-    def send(self, mail):
+    def send(self, source, to = [], cc = [], bcc = [], reply_to = [], 
+             subject = None, html_body = None, text_body = None, charset = 'UTF-8'):
         ''' Send a structured email '''
-        body = {'Action': 'SendEmail', 'Source': mail.source}
+        body = {'Action': 'SendEmail', 'Source': source}
 
-        if mail.subject is not None:
-            body['Message.Subject.Charset']     = mail.charset
-            body['Message.Subject.Data']        = mail.subject
+        if subject is not None:
+            body['Message.Subject.Charset']     = charset
+            body['Message.Subject.Data']        = subject
 
-        if mail.text_body is not None:
-            body['Message.Body.Text.Data']      = mail.text_body
-            body['Message.Body.Text.Charset']   = mail.charset
+        if text_body is not None:
+            body['Message.Body.Text.Data']      = text_body
+            body['Message.Body.Text.Charset']   = charset
 
-        if mail.html_body is not None:
-            body['Message.Body.Html.Data']      = mail.html_body
-            body['Message.Body.Html.Charset']   = mail.charset
+        if html_body is not None:
+            body['Message.Body.Html.Data']      = html_body
+            body['Message.Body.Html.Charset']   = charset
 
         # Fill in To, Cc, Bcc, and ReplyTo addresses
-        for (t, addrs) in [('Destination.To',   mail.to), 
-                           ('Destination.Cc',   mail.cc),
-                           ('Destination.Bcc',  mail.bcc),
-                           ('ReplyTo',          mail.reply_to)]:
+        for (t, addrs) in [('Destination.To',   to), 
+                           ('Destination.Cc',   cc),
+                           ('Destination.Bcc',  bcc),
+                           ('ReplyTo',          reply_to)]:
             for (i, addr) in enumerate(addrs, 1):
                 body['{0}Addresses.member.{1}'.format(t, i)] = addr
 
@@ -347,9 +337,8 @@ Credentials file example
             bcc     = [e for e in opts.get('-b', '').split(',') if e != '']
             cc      = [e for e in opts.get('-c', '').split(',') if e != '']
             body    = sys.stdin.read()
-            mail = SESMail(source=source, subject=subject, to=to, cc=cc, bcc=bcc, 
-                        text_body=body)
-            ses.send(mail)
+            ses.send(source=source, subject=subject, to=to, cc=cc, bcc=bcc, 
+                     text_body=body)
 
 
 
