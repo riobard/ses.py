@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import hmac, urllib, httplib, sys
 from hashlib import sha256
 from base64 import b64encode
