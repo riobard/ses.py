@@ -251,22 +251,25 @@ class SESConnection(object):
                  'Rejects': r} for (t, b, c, d, r) in ls]
 
 
-    def send(self, source, to = [], cc = [], bcc = [], reply_to = [], 
+    def send(self, source, to = [], cc = [], bcc = [], reply_to = [], return_path = None,
              subject = None, html_body = None, text_body = None, charset = 'UTF-8'):
         ''' Send a structured email '''
         body = {'Action': 'SendEmail', 'Source': source}
 
-        if subject is not None:
+        if subject:
             body['Message.Subject.Charset']     = charset
             body['Message.Subject.Data']        = subject
 
-        if text_body is not None:
+        if text_body:
             body['Message.Body.Text.Data']      = text_body
             body['Message.Body.Text.Charset']   = charset
 
-        if html_body is not None:
+        if html_body:
             body['Message.Body.Html.Data']      = html_body
             body['Message.Body.Html.Charset']   = charset
+
+        if return_path:
+            body['ReturnPath'] = return_path
 
         # Fill in To, Cc, Bcc, and ReplyTo addresses
         for (t, addrs) in [('Destination.To',   to), 
