@@ -122,10 +122,13 @@ class SESConnection(object):
         signature = b64encode(hmac.new(self.key, date, sha256).digest())
         auth = 'AWS3-HTTPS AWSAccessKeyId={0},Algorithm={1},Signature={2}'.format(
                     self.key_id, 'HMACSHA256', signature)
-        post_data = urllib.urlencode(body)
+        encoded_body = dict((k.encode('UTF-8') if isinstance(k, unicode) else k, 
+                             v.encode('UTF-8') if isinstance(v, unicode) else v) 
+                             for (k, v) in body.items())
+        post_data = urllib.urlencode(encoded_body)  # urlencode does NOT take Unicode strings!
         headers = {'Date': date,
                    'X-Amzn-Authorization': auth,
-                   'Content-Type': 'application/x-www-form-urlencoded',
+                   'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                    'Content-Length': len(post_data),
                    'Connection': 'keep-alive'}
 
@@ -258,15 +261,15 @@ class SESConnection(object):
 
         if subject:
             body['Message.Subject.Charset']     = charset
-            body['Message.Subject.Data']        = subject
+            body['Message.Subject.Data']        = subject.encode(charset) if isinstance(subject, unicode) else subject
 
         if text_body:
-            body['Message.Body.Text.Data']      = text_body
             body['Message.Body.Text.Charset']   = charset
+            body['Message.Body.Text.Data']      = text_body.encode(charset) if isinstance(text_body, unicode) else text_body
 
         if html_body:
-            body['Message.Body.Html.Data']      = html_body
             body['Message.Body.Html.Charset']   = charset
+            body['Message.Body.Html.Data']      = html_body.encode(charset) if isinstance(html_body, unicode) else html_body
 
         if return_path:
             body['ReturnPath'] = return_path
