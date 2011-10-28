@@ -16,10 +16,10 @@ class SESError(Exception):
     def __str__(self):
         return '{msg} | {status} {reason} {headers} {body}'.format(
                 msg = self.msg, 
-                status = self.rsp.status,
-                reason = self.rsp.reason, 
-                headers = self.rsp.msg,
-                body = self.rsp.body)
+                status = self.rsp.status if self.rsp is not None else '',
+                reason = self.rsp.reason if self.rsp is not None else '', 
+                headers = self.rsp.msg if self.rsp is not None else '',
+                body = self.rsp.body if self.rsp is not None else '')
 
 
 
