@@ -110,14 +110,18 @@ class SESConnection(object):
         self.key    = key
         if api_endpoint is not None:
             self.API_ENDPOINT = api_endpoint
+        self.reset_connection()
 
-        # The persistent HTTPS connection object
+
+    def reset_connection(self):
+        # Persistent HTTPS connection (keep-alive)
         self.conn = httplib.HTTPSConnection(host=self.API_ENDPOINT,
                                             timeout=self.API_REQUEST_TIMEOUT)
 
 
     def api(self, body):
         ''' Call AWS SES service API '''
+
         # RFC2822 date format
         date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S +0000')
         signature = b64encode(hmac.new(self.key, date, sha256).digest())
@@ -137,20 +141,16 @@ class SESConnection(object):
             self.conn.request('POST', '/', headers=headers, body=post_data)
             rsp = self.conn.getresponse()
             return self.process_response(rsp)
-        except httplib.HTTPException as e:
+        except Exception as e:
             try: 
                 msg = traceback.format_exc()
                 errmsg = '{0}: {1}'.format(e, msg)
                 raise SESError(errmsg, rsp=rsp)
-            except NameError:
+            except NameError: # if rsp is not defined yet
                 raise SESError(errmsg)
-        except IOError as e:
-            try: 
-                msg = traceback.format_exc()
-                errmsg = '{0}: {1}'.format(e, msg)
-                raise SESError(errmsg, rsp=rsp)
-            except NameError:
-                raise SESError(errmsg)
+        finally:
+            # The connection might be broken. Reset it just to be safe. 
+            self.reset_connection()
 
 
     def process_response(self, rsp):
