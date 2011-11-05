@@ -5,6 +5,7 @@ from base64 import b64encode
 from datetime import datetime
 from xml.dom import minidom
 from getopt import gnu_getopt as getopt, GetoptError
+import traceback
 
 
 class SESError(Exception):
@@ -138,14 +139,18 @@ class SESConnection(object):
             return self.process_response(rsp)
         except httplib.HTTPException as e:
             try: 
-                raise SESError(str(e), rsp=rsp)
+                msg = traceback.format_exc()
+                errmsg = '{0}: {1}'.format(e, msg)
+                raise SESError(errmsg, rsp=rsp)
             except NameError:
-                raise SESError(str(e))
+                raise SESError(errmsg)
         except IOError as e:
             try: 
-                raise SESError(str(e), rsp=rsp)
+                msg = traceback.format_exc()
+                errmsg = '{0}: {1}'.format(e, msg)
+                raise SESError(errmsg, rsp=rsp)
             except NameError:
-                raise SESError(str(e))
+                raise SESError(errmsg)
 
 
     def process_response(self, rsp):
